@@ -1,0 +1,422 @@
+diff --git a/src/app/globals.css b/src/app/globals.css
+index 005e79b..f79f4ef 100644
+--- a/src/app/globals.css
++++ b/src/app/globals.css
+@@ -118,3 +118,18 @@
+   @apply before:absolute before:top-0 before:right-0 before:h-px before:w-screen before:bg-gray-950/5 dark:before:bg-white/10;
+   @apply after:absolute after:right-0 after:bottom-0 after:h-px after:w-screen after:bg-gray-950/5 dark:after:bg-white/10;
+ }
++/* Skip link styles */
++.skip-link {
++  position: absolute;
++  top: -40px;
++  left: 0;
++  background-color: white;
++  color: black;
++  padding: 0.5rem 1rem;
++  z-index: 1000;
++  text-decoration: none;
++  transition: top 0.3s ease;
++}
++.skip-link:focus {
++  top: 0;
++}
+diff --git a/src/app/layout.tsx b/src/app/layout.tsx
+index 843d7a4..3efd878 100644
+--- a/src/app/layout.tsx
++++ b/src/app/layout.tsx
+@@ -169,10 +169,11 @@ export default async function RootLayout({
+         <Script src={`data:text/javascript;base64,${btoa(darkModeScript)}`} />
+       </head>
+       <body>
++<a href="#main-content" className="skip-link">Skip to main content</a>
+         <Fathom />
+         <SearchProvider>
+           <ThemeProvider>
+-            <div className="isolate">{children}</div>
++            <main id="main-content" className="isolate">{children}</main>
+           </ThemeProvider>
+         </SearchProvider>
+       </body>
+diff --git a/src/app/sponsor/page.tsx b/src/app/sponsor/page.tsx
+index dac8d32..cdc90cc 100644
+--- a/src/app/sponsor/page.tsx
++++ b/src/app/sponsor/page.tsx
+@@ -425,6 +425,7 @@ function FeaturedPartners() {
+               href={partner.url}
+               target="_blank"
+               rel="noopener sponsored"
++              aria-label={`Visit ${partner.name}`}
+               className="grid place-content-center transition-colors hover:bg-gray-950/2.5 max-lg:nth-[2n+1]:line-y sm:px-2 sm:py-4 lg:max-xl:nth-[3n+1]:line-y xl:nth-[4n+1]:line-y dark:hover:bg-white/2.5"
+             >
+               <partner.logo className="w-full max-w-80" aria-label={`${partner.name} logo`} />
+@@ -542,7 +543,7 @@ function InsiderPerkScreenshots() {
+   return (
+     <div className="line-y mt-10 grid grid-rows-1 gap-2 p-2 md:h-130 md:grid-rows-2 lg:grid-cols-3">
+       <div className="relative overflow-hidden rounded-xl bg-gray-200 pt-9 pl-9 outline -outline-offset-1 outline-gray-950/5 max-md:aspect-[4/3] md:col-start-1 md:row-start-1 md:max-lg:col-span-2 md:max-lg:pt-5 md:max-lg:pl-5 lg:row-span-2 dark:bg-gray-900 dark:outline-white/5">
+-        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black/80 pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
++        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
+           <svg fill="#D97757" viewBox="0 0 16 16" className="size-4">
+             <path d="m3.137 10.637 3.145-1.765.052-.154-.052-.085h-.154l-.526-.032-1.797-.048-1.559-.065-1.51-.081-.38-.081L0 7.856l.036-.234.32-.215.458.04 1.011.07 1.518.105 1.101.064 1.631.17h.26l.036-.105-.09-.065-.068-.064-1.57-1.065-1.7-1.125-.89-.648-.483-.328-.242-.307-.106-.672.438-.482.586.04.15.041.595.458 1.271.983 1.66 1.222.242.203.098-.07.012-.048-.11-.182-.902-1.63-.964-1.66-.429-.689-.113-.412a1.982 1.982 0 0 1-.069-.486l.498-.676L4.46 0l.664.09.28.242.412.943.668 1.485L7.52 4.78l.304.6.162.554.06.17h.106v-.097l.085-1.138.158-1.396.153-1.797.053-.506.251-.607.498-.328.388.186.32.457-.044.296-.19 1.234-.373 1.935-.243 1.295h.142l.162-.162.655-.87 1.101-1.376.486-.546.567-.604.364-.287h.688l.506.753-.226.777-.709.899-.587.76-.842 1.134-.526.907.049.072.125-.012 1.902-.405 1.029-.186 1.226-.21.555.259.06.263-.218.538-1.312.324-1.538.308-2.29.542-.03.02.033.04 1.033.098.44.024h1.081l2.012.15.526.348.316.425-.053.324-.81.413-1.092-.26-2.55-.606-.874-.219h-.122v.073l.729.712 1.336 1.206 1.671 1.555.085.384-.214.304-.227-.033-1.47-1.105-.566-.498-1.283-1.08h-.085v.113l.295.433 1.563 2.348.08.72-.113.235-.404.142-.446-.081-.914-1.283-.943-1.445-.761-1.296-.093.053-.45 4.837-.21.247L7.58 16l-.405-.308-.214-.498.214-.983.26-1.283.21-1.02.19-1.267.113-.42-.008-.03-.093.013-.955 1.311-1.453 1.963-1.15 1.23-.275.11-.477-.247.044-.441.267-.393 1.59-2.023.96-1.255.62-.725-.005-.105h-.036l-4.226 2.744-.753.098-.323-.304.04-.498.154-.162 1.27-.874-.003.004Z" />
+           </svg>
+@@ -566,7 +567,7 @@ function InsiderPerkScreenshots() {
+         />
+       </div>
+       <div className="relative overflow-hidden rounded-xl bg-[#F66969] pt-9 pl-9 inset-ring inset-ring-gray-950/10 max-md:aspect-[4/3] md:row-start-1 md:max-lg:col-start-3 md:max-lg:pt-5 md:max-lg:pl-5 lg:col-start-2">
+-        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black/80 pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
++        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
+           <svg fill="#FF6363" viewBox="0 0 16 16" className="size-4">
+             <path
+               d="M4 10.33V12L0 8l.834-.834L4 10.331ZM5.67 12H4l4.001 4 .834-.834L5.67 12Zm9.495-3.165L16 8 7.999 0l-.833.837 3.165 3.165H8.418l-2.21-2.205-.833.834 1.373 1.374h-.96v6.21h6.21v-.96l1.374 1.373.834-.833-2.208-2.21V5.672l3.167 3.163ZM4.418 3.586l-.838.835.897.896.834-.835-.893-.896Zm7.105 7.104-.835.835.895.896.836-.835-.896-.896ZM2.626 5.377l-.835.836L4 8.421v-1.67L2.625 5.377Zm6.628 6.626h-1.67l2.209 2.21.835-.836-1.374-1.374Z"
+@@ -583,7 +584,7 @@ function InsiderPerkScreenshots() {
+         />
+       </div>
+       <div className="relative flex items-center justify-center rounded-xl bg-[#5865F2] inset-ring inset-ring-gray-950/10 max-md:aspect-[4/3] md:row-start-2 md:max-lg:col-start-1 lg:col-start-2">
+-        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black/80 pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
++        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
+           <LockClosedIcon className="size-4 fill-white/75" />
+           Private community
+         </p>
+@@ -592,7 +593,7 @@ function InsiderPerkScreenshots() {
+         </svg>
+       </div>
+       <div className="relative overflow-hidden rounded-xl bg-gray-200 pt-9 pl-9 outline -outline-offset-1 outline-gray-950/5 max-md:aspect-[4/3] md:max-lg:col-span-2 md:max-lg:col-start-2 md:max-lg:row-start-2 md:max-lg:pt-5 md:max-lg:pl-5 lg:col-start-3 lg:row-span-2 lg:row-start-1 dark:bg-gray-900 dark:outline-white/5">
+-        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black/80 pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
++        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
+           <svg fill="none" viewBox="0 0 16 16" className="size-4">
+             <path
+               fill="#0065A9"
+diff --git a/src/components/docs-sidebar.tsx b/src/components/docs-sidebar.tsx
+index b795674..d92c68b 100644
+--- a/src/components/docs-sidebar.tsx
++++ b/src/components/docs-sidebar.tsx
+@@ -28,7 +28,7 @@ function TopNav() {
+     <ul className="flex flex-col gap-2">
+       <li>
+         <TopNavLink href="/docs/installation" aria-current="page">
+-          <svg viewBox="0 0 16 16" fill="none">
++          <svg viewBox="0 0 16 16" aria-hidden="true" fill="none"> aria-hidden="true"
+             <path
+               data-highlight
+               d="M3.5 1.5C2.4264 1.5 1.40926 1.74169 0.5 2.17363V13.1736C1.40926 12.7417 2.4264 12.5 3.5 12.5C5.21352 12.5 6.78323 13.1157 8 14.1379V3.13789C6.78323 2.11568 5.21352 1.5 3.5 1.5Z"
+@@ -43,7 +43,7 @@ function TopNav() {
+       </li>
+       <li>
+         <TopNavLink href="/plus/ui-blocks?ref=sidebar">
+-          <svg viewBox="0 0 16 16" fill="none">
++          <svg viewBox="0 0 16 16" aria-hidden="true" fill="none"> aria-hidden="true"
+             <path data-outline d="m11 8 .5.25L15 10.5 8 15l-7-4.5 3.5-2.25L5 8" />
+             <path data-highlight d="M8 1 1 5.5 8 10l7-4.5L8 1Z" />
+             <path data-outline d="M8 1 1 5.5 8 10l7-4.5L8 1Z" />
+@@ -53,7 +53,7 @@ function TopNav() {
+       </li>
+       <li>
+         <TopNavLink href="/plus/templates?ref=sidebar">
+-          <svg viewBox="0 0 16 16" fill="none">
++          <svg viewBox="0 0 16 16" aria-hidden="true" fill="none"> aria-hidden="true"
+             <path
+               data-highlight
+               d="M12.5 1.5H3.5C2.39543 1.5 1.5 2.39543 1.5 3.5V4.5V12.5C1.5 13.6046 2.39543 14.5 3.5 14.5H5.5V4.5H14.5V3.5C14.5 2.39543 13.6046 1.5 12.5 1.5Z"
+@@ -68,7 +68,7 @@ function TopNav() {
+       </li>
+       <li>
+         <TopNavLink href="/plus/ui-kit?ref=sidebar">
+-          <svg viewBox="0 0 16 16" fill="none">
++          <svg viewBox="0 0 16 16" aria-hidden="true" fill="none"> aria-hidden="true"
+             <path data-highlight d="M15.5 11.5V4.5L8 8.5L0.5 4.5V11.5L8 15.5L15.5 11.5Z" />
+             <path
+               data-outline
+@@ -80,7 +80,7 @@ function TopNav() {
+       </li>
+       <li>
+         <TopNavLink href="https://play.tailwindcss.com/">
+-          <svg viewBox="0 0 16 16" fill="none">
++          <svg viewBox="0 0 16 16" aria-hidden="true" fill="none"> aria-hidden="true"
+             <rect data-highlight x="1.5" y="1.5" width="13" height="13" rx="2" />
+             <rect data-outline x="1.5" y="1.5" width="13" height="13" rx="2" />
+             <path data-outline d="M6.5 6L4.5 8L6.5 10" strokeLinecap="round" strokeLinejoin="round" />
+@@ -91,7 +91,7 @@ function TopNav() {
+       </li>
+       <li className="flex items-center gap-3">
+         <TopNavLink href="/sponsor#insiders">
+-          <svg viewBox="0 0 16 16" fill="none">
++          <svg viewBox="0 0 16 16" aria-hidden="true" fill="none"> aria-hidden="true"
+             <path
+               data-outline
+               d="M5.5 4.5h-3a2 2 0 00-2 2v4c0 1.1.9 2 2 2h1v3l3-3h2a2 2 0 002-2v-1m0 0l2 2v-3h1a2 2 0 002-2v-4a2 2 0 00-2-2h-6a2 2 0 00-2 2v4c0 1.1.9 2 2 2h2l1 1z"
+@@ -110,32 +110,32 @@ function TopNav() {
+             <svg
+               width="5"
+               height="5"
+-              viewBox="0 0 5 5"
+-              className="absolute top-[-2px] left-[-2px] fill-sky-300 dark:fill-sky-300/50"
++              viewBox="0 0 5 5" aria-hidden="true"
++              className="absolute top-[-2px] left-[-2px] fill-sky-300 dark:fill-sky-300/50" aria-hidden="true"
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+             </svg>
+             <svg
+               width="5"
+               height="5"
+-              viewBox="0 0 5 5"
+-              className="absolute top-[-2px] right-[-2px] fill-sky-300 dark:fill-sky-300/50"
++              viewBox="0 0 5 5" aria-hidden="true"
++              className="absolute top-[-2px] right-[-2px] fill-sky-300 dark:fill-sky-300/50" aria-hidden="true"
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+             </svg>
+             <svg
+               width="5"
+               height="5"
+-              viewBox="0 0 5 5"
+-              className="absolute bottom-[-2px] left-[-2px] fill-sky-300 dark:fill-sky-300/50"
++              viewBox="0 0 5 5" aria-hidden="true"
++              className="absolute bottom-[-2px] left-[-2px] fill-sky-300 dark:fill-sky-300/50" aria-hidden="true"
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+             </svg>
+             <svg
+               width="5"
+               height="5"
+-              viewBox="0 0 5 5"
+-              className="absolute right-[-2px] bottom-[-2px] fill-sky-300 dark:fill-sky-300/50"
++              viewBox="0 0 5 5" aria-hidden="true"
++              className="absolute right-[-2px] bottom-[-2px] fill-sky-300 dark:fill-sky-300/50" aria-hidden="true"
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+             </svg>
+diff --git a/src/components/header.tsx b/src/components/header.tsx
+index 52126d2..e015678 100644
+--- a/src/components/header.tsx
++++ b/src/components/header.tsx
+@@ -11,7 +11,7 @@ import { SearchButton } from "./search";
+ function Logo(props: React.ComponentProps<"svg">) {
+   return (
+     <>
+-      <svg viewBox="0 0 167 21" fill="none" {...props}>
++      <svg viewBox="0 0 167 21" fill="none" aria-hidden="true" {...props}>
+         <path
+           className="fill-sky-400"
+           d="M17.183 0C12.6 0 9.737 2.291 8.59 6.873c1.719-2.29 3.723-3.15 6.014-2.577 1.307.326 2.242 1.274 3.275 2.324 1.685 1.71 3.635 3.689 7.894 3.689 4.582 0 7.445-2.291 8.591-6.872-1.718 2.29-3.723 3.15-6.013 2.576-1.308-.326-2.243-1.274-3.276-2.324C23.39 1.98 21.44 0 17.183 0ZM8.59 10.309C4.01 10.309 1.145 12.6 0 17.182c1.718-2.291 3.723-3.15 6.013-2.577 1.308.326 2.243 1.274 3.276 2.324 1.685 1.71 3.635 3.689 7.894 3.689 4.582 0 7.445-2.29 8.59-6.872-1.718 2.29-3.722 3.15-6.013 2.577-1.307-.327-2.242-1.276-3.276-2.325-1.684-1.71-3.634-3.689-7.893-3.689Z"
+@@ -27,7 +27,7 @@ function Logo(props: React.ComponentProps<"svg">) {
+ 
+ function GitHubLogo(props: React.ComponentProps<"svg">) {
+   return (
+-    <svg viewBox="0 0 20 20" {...props}>
++    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" {...props}>
+       <path d="M10 0C4.475 0 0 4.475 0 10a9.994 9.994 0 006.838 9.488c.5.087.687-.213.687-.476 0-.237-.013-1.024-.013-1.862-2.512.463-3.162-.612-3.362-1.175-.113-.287-.6-1.175-1.025-1.412-.35-.188-.85-.65-.013-.663.788-.013 1.35.725 1.538 1.025.9 1.512 2.337 1.087 2.912.825.088-.65.35-1.088.638-1.338-2.225-.25-4.55-1.112-4.55-4.937 0-1.088.387-1.987 1.025-2.688-.1-.25-.45-1.274.1-2.65 0 0 .837-.262 2.75 1.026a9.28 9.28 0 012.5-.338c.85 0 1.7.112 2.5.337 1.912-1.3 2.75-1.024 2.75-1.024.55 1.375.2 2.4.1 2.65.637.7 1.025 1.587 1.025 2.687 0 3.838-2.337 4.688-4.562 4.938.362.312.675.912.675 1.85 0 1.337-.013 2.412-.013 2.75 0 .262.188.574.688.474A10.016 10.016 0 0020 10c0-5.525-4.475-10-10-10z" />
+     </svg>
+   );
+@@ -130,7 +130,7 @@ export function Header(props: React.PropsWithChildren) {
+             <svg
+               xmlns="http://www.w3.org/2000/svg"
+               viewBox="0 0 16 16"
+-              className="-ml-0.5 size-4 fill-gray-600 dark:fill-gray-500"
++              className="-ml-0.5 size-4 fill-gray-600 dark:fill-gray-500" aria-hidden="true"
+             >
+               <path
+                 fillRule="evenodd"
+@@ -159,35 +159,35 @@ export function Header(props: React.PropsWithChildren) {
+           <a href="/plus?ref=top" className="group relative px-1.5 text-sm/6 text-sky-800 dark:text-sky-300">
+             <span className="absolute inset-0 border border-dashed border-sky-300/60 bg-sky-400/10 group-hover:bg-sky-400/15 dark:border-sky-300/30" />
+             Plus
+-            <svg
++            <svg aria-hidden="true"
+               width="5"
+               height="5"
+               viewBox="0 0 5 5"
+-              className="absolute top-[-2px] left-[-2px] fill-sky-300 dark:fill-sky-300/50"
++              className="absolute top-[-2px] left-[-2px] fill-sky-300 dark:fill-sky-300/50" aria-hidden="true"
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+             </svg>
+-            <svg
++            <svg aria-hidden="true"
+               width="5"
+               height="5"
+               viewBox="0 0 5 5"
+-              className="absolute top-[-2px] right-[-2px] fill-sky-300 dark:fill-sky-300/50"
++              className="absolute top-[-2px] right-[-2px] fill-sky-300 dark:fill-sky-300/50" aria-hidden="true"
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+             </svg>
+-            <svg
++            <svg aria-hidden="true"
+               width="5"
+               height="5"
+               viewBox="0 0 5 5"
+-              className="absolute bottom-[-2px] left-[-2px] fill-sky-300 dark:fill-sky-300/50"
++              className="absolute bottom-[-2px] left-[-2px] fill-sky-300 dark:fill-sky-300/50" aria-hidden="true"
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+             </svg>
+-            <svg
++            <svg aria-hidden="true"
+               width="5"
+               height="5"
+               viewBox="0 0 5 5"
+-              className="absolute right-[-2px] bottom-[-2px] fill-sky-300 dark:fill-sky-300/50"
++              className="absolute right-[-2px] bottom-[-2px] fill-sky-300 dark:fill-sky-300/50" aria-hidden="true" role="presentation"
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+             </svg>
+diff --git a/src/components/highlight.tsx b/src/components/highlight.tsx
+index 758909f..522eb6e 100644
+--- a/src/components/highlight.tsx
++++ b/src/components/highlight.tsx
+@@ -73,7 +73,7 @@ export function HighlightedCode({
+   [key: string]: any;
+ }) {
+   return (
+-    <div {...props} className={className}>
++    <div role="region" {...props} className={className}>
+       {highlight({
+         ...example,
+         components,
+diff --git a/src/components/home/anchored-to-bottom.tsx b/src/components/home/anchored-to-bottom.tsx
+index e8f355c..44d6afb 100644
+--- a/src/components/home/anchored-to-bottom.tsx
++++ b/src/components/home/anchored-to-bottom.tsx
+@@ -16,6 +16,7 @@ export function AnchoredToBottom({
+       {...props}
+       className={className}
+       data-scroll-anchor
++      role="region"
+       ref={(container) => {
+         if (!container) return;
+ 
+diff --git a/src/components/home/explainer-section.tsx b/src/components/home/explainer-section.tsx
+index a9944a8..35e1430 100644
+--- a/src/components/home/explainer-section.tsx
++++ b/src/components/home/explainer-section.tsx
+@@ -158,7 +158,7 @@ export default function ExplainerSection() {
+                   </div>
+                   <div className="flex w-full flex-col gap-1 lg:h-132.5 lg:flex-row">
+                     <div className="flex flex-col gap-1 lg:w-1/2 xl:w-5/8">
+-                      <Panel className="min-h-0 flex-1 max-lg:max-h-76" aria-label="panel, HTML editor, animated">
++                      <Panel role="region" className="min-h-0 flex-1 max-lg:max-h-76" aria-label="panel, HTML editor, animated">
+                         <Tabs>
+                           <Tab selected className="group-data-modified:italic">
+                             index.html
+@@ -168,7 +168,7 @@ export default function ExplainerSection() {
+                         </Tabs>
+                         <HtmlFile className="with-line-numbers" />
+                       </Panel>
+-                      <Panel className="h-32 shrink-0 lg:h-46" aria-label="panel, terminal, animated">
++                      <Panel role="region" className="h-32 shrink-0 lg:h-46" aria-label="panel, terminal, animated">
+                         <Tabs>
+                           <Tab selected>Terminal</Tab>
+                         </Tabs>
+@@ -176,7 +176,7 @@ export default function ExplainerSection() {
+                       </Panel>
+                     </div>
+                     <div className="flex h-66 flex-col gap-2.5 lg:h-auto lg:w-1/2 xl:w-3/8">
+-                      <Panel className="h-full" aria-label="panel, built CSS, animated">
++                      <Panel role="region" className="h-full" aria-label="panel, built CSS, animated">
+                         <Tabs>
+                           <Tab selected>build.css</Tab>
+                         </Tabs>
+@@ -196,8 +196,8 @@ export default function ExplainerSection() {
+ 
+ function HtmlFile({ className }: { className?: string }) {
+   return (
+-    <HighlightedCode
+-      aria-label="editor, readonly, html file"
++    <HighlightedCode role="region" aria-label="editor, readonly, html file"
++      
+       className={clsx(
+         "*:flex *:*:max-w-none *:*:shrink-0 *:*:grow *:rounded-lg *:px-3 *:py-2",
+         "**:[.line]:isolate **:[.line]:block **:[.line]:not-last:min-h-[1lh]",
+@@ -264,7 +264,7 @@ async function BuiltCss({ className, timeline }: { className?: string; timeline:
+   let code = await generateCss({ license: false, candidates });
+ 
+   return (
+-    <HighlightedCode
++    <HighlightedCode role="region"
+       aria-label="editor, readonly, built CSS"
+       className={clsx(
+         "opacity-0 group-data-finished:opacity-100 group-data-running:opacity-100",
+@@ -386,17 +386,17 @@ function wrapClassesInOutput(): ShikiTransformer {
+   };
+ }
+ 
++interface PanelProps extends React.HTMLAttributes<HTMLDivElement> {
++  className?: string;
++  numbered?: boolean;
++  children?: React.ReactNode;
++}
+ function Panel({
+   className,
+   numbered,
+   children,
+   ...props
+-}: {
+-  className?: string;
+-  numbered?: boolean;
+-  children?: React.ReactNode;
+-  [key: string]: any;
+-}) {
++}: PanelProps) {
+   return (
+     // We *want* the sticky positioning because that means the scrollbar handles
+     // appear over the tab bar instead of under it. However, this presents a
+@@ -426,8 +426,9 @@ function Tabs({ children }: { children: React.ReactNode }) {
+   return (
+     <div
+       className="sticky top-0 left-0 z-10 col-start-1 row-start-1 mb-px flex items-center gap-2 border-b border-b-white/5 bg-white/2.5 bg-clip-padding p-1 text-white backdrop-blur-lg"
+-      role="presentation"
++      role="tablist"
+       aria-label="Tab Bar"
++      
+     >
+       {children}
+     </div>
+@@ -441,7 +442,7 @@ function Tab({ className, selected, children }: { className?: string; selected?:
+         "isolate rounded-sm px-2 py-1 text-xs/5 text-white inset-ring-white/5 hover:bg-white/10 aria-selected:bg-white/10 aria-selected:inset-ring",
+         className,
+       )}
+-      role="presentation"
++      role="tab"
+       aria-selected={selected}
+     >
+       {children}
+diff --git a/src/components/home/partners-section.tsx b/src/components/home/partners-section.tsx
+index d2f5355..db89ce3 100644
+--- a/src/components/home/partners-section.tsx
++++ b/src/components/home/partners-section.tsx
+@@ -70,6 +70,7 @@ export default function WhyTailwindCssSection() {
+                 href={company.url}
+                 target="_blank"
+                 rel="noopener sponsored"
++    aria-label={`Visit ${company.name}`}
+                 className="grid place-content-center transition-colors hover:bg-gray-950/2.5 max-lg:nth-[2n+1]:line-y sm:px-2 sm:py-4 lg:max-xl:nth-[3n+1]:line-y xl:nth-[4n+1]:line-y dark:hover:bg-white/2.5"
+               >
+                 <company.logo className="w-full max-w-80" aria-label={`${company.name} logo`} />
+diff --git a/src/components/showcase-thumbnail.tsx b/src/components/showcase-thumbnail.tsx
+index 1900ca2..d5b37c6 100644
+--- a/src/components/showcase-thumbnail.tsx
++++ b/src/components/showcase-thumbnail.tsx
+@@ -82,7 +82,9 @@ export default function ShowcaseThumbnail({ showcase, priority = false }: { show
+         hideVideo();
+       }}
+     >
+-      <a href={showcase.url} target="_blank" rel="noopener noreferrer" className="absolute inset-0 z-10"></a>
++      <a href={showcase.url} target="_blank" rel="noopener noreferrer" aria-label={`Visit ${showcase.name}`} className="absolute inset-0 z-10">
++  <span className="sr-only">Visit {showcase.name}</span>
++</a>
+       <GridContainer className={clsx("p-2", BEFORE_AND_AFTER_ONLY_IN_FIRST_COLUMN_OF_CURRENT_GRID)}>
+         <div className="relative aspect-[672/494] overflow-hidden rounded-xl outline outline-gray-950/5">
+           <Image
+@@ -149,10 +151,11 @@ export default function ShowcaseThumbnail({ showcase, priority = false }: { show
+           <h2 className="text-sm/6 font-medium">{showcase.name}</h2>
+           {showcase.isTemplate && (
+             <p
+-              aria-label="This site is a Tailwind Plus template"
++              
+               className="ml-2 rounded-full border border-transparent bg-sky-100 px-1.5 text-[0.6875rem] leading-5 font-semibold text-sky-500 dark:bg-gray-600/50 dark:text-gray-200 dark:group-hover:bg-sky-500 dark:group-hover:text-white"
+             >
+               Template
++<span className="sr-only">This site is a Tailwind Plus template</span>
+             </p>
+           )}
+           <p className="line-clamp-1 w-full flex-none font-mono text-xs/6 text-neutral-600 dark:text-neutral-400">
