@@ -1,0 +1,386 @@
+diff --git a/src/app/layout.tsx b/src/app/layout.tsx
+index 843d7a4..072be70 100644
+--- a/src/app/layout.tsx
++++ b/src/app/layout.tsx
+@@ -6,6 +6,8 @@ import { ThemeProvider } from "@/components/theme-toggle";
+ import Fathom from "@/components/fathom";
+ import Script from "next/script";
+ 
++import DevToolsAccessibilityFix from '@/components/DevToolsAccessibilityFix';
++import RemoveInvalidAriaControls from "@/components/RemoveInvalidAriaControls";
+ const inter = localFont({
+   src: [
+     { path: "./fonts/InterVariable.woff2", weight: "100 900", style: "normal" },
+@@ -162,19 +164,56 @@ export default async function RootLayout({
+         <meta name="msapplication-TileColor" content="#38bdf8" />
+         <meta name="msapplication-config" content={v("/favicons/browserconfig.xml")} />
+         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: darkModeScript }}></script>
+-        {/*
+-          We inject the script via the <Script/> tag again, since we found the regular `<script>`
+-          tag to not execute when rendering a not-found page.
+-         */}
++        {/* Fix Next.js Dev Tools menu aria-controls by assigning matching id to menu */}
++        <Script id="nextjs-dev-tools-menu-fix" strategy="afterInteractive" dangerouslySetInnerHTML={{
++          __html: `
++        (function() {
++            var controlId = 'nextjs-dev-tools-menu';
++            var observer = new MutationObserver(function() {
++              var portal = document.querySelector('nextjs-portal');
++              if (portal) {
++                var menu = portal.querySelector('[role="menu"]');
++                if (menu && !menu.id) {
++                  menu.id = controlId;
++                  observer.disconnect();
++                }
++              }
++            });
++            observer.observe(document.body, { childList: true, subtree: true });
++          })();
++       ` }} />
+         <Script src={`data:text/javascript;base64,${btoa(darkModeScript)}`} />
+       </head>
+       <body>
++        {/* Remove invalid aria-controls from Next.js Dev Tools button */}
++        <RemoveInvalidAriaControls />
++
++        {/* Skip link for accessibility */}
++        <a href="#main-content" className="absolute top-0 left-0 -translate-y-full focus:translate-y-0 bg-white text-black p-4 z-50">
++          Skip to main content
++        </a>
++
++        <Script id="fix-nextjs-devtools-aria-controls" strategy="afterInteractive">
++          {`(function() {
++        const btn = document.querySelector('[data-nextjs-dev-tools-button="true"]');
++        if (btn) btn.removeAttribute('aria-controls');
++      })();`}
++        </Script>
++        <DevToolsAccessibilityFix />
+         <Fathom />
+         <SearchProvider>
+           <ThemeProvider>
+-            <div className="isolate">{children}</div>
++            <main id="main-content" className="isolate">{children}</main>
+           </ThemeProvider>
+         </SearchProvider>
++        {process.env.NODE_ENV === 'development' && (
++          <Script id="remove-dev-tools-aria" strategy="afterInteractive">
++            {`(function() {
++                const btn = document.querySelector('[data-nextjs-dev-tools-button]');
++                if (btn) btn.removeAttribute('aria-controls');
++              })();`}
++          </Script>
++        )}
+       </body>
+     </html>
+   );
+diff --git a/src/app/sponsor/page.tsx b/src/app/sponsor/page.tsx
+index dac8d32..ffcab53 100644
+--- a/src/app/sponsor/page.tsx
++++ b/src/app/sponsor/page.tsx
+@@ -284,7 +284,7 @@ export const supporters = [
+     logo: function (props: React.SVGProps<SVGSVGElement>) {
+       return (
+         <svg fill="currentColor" viewBox="0 0 320 96" {...props}>
+-            <path fillRule="evenodd" d="M55.125 27.688c0-.863.7-1.563 1.563-1.563h39.983l-5.47 5.469h-27.48a3.125 3.125 0 0 0-3.126 3.125V54.25h3.125V34.719h24.356l-5.47 5.468H71.535a2.344 2.344 0 0 0-2.344 2.344v3.907h3.125v-3.126h7.166L53.791 69C52.316 70.475 53.362 73 55.45 73h41.87a4.687 4.687 0 0 0 4.687-4.688V33.938h-3.125v34.374c0 .863-.7 1.563-1.563 1.563H57.335l5.47-5.469h27.481a3.125 3.125 0 0 0 3.126-3.125V41.75h-3.126v19.531H65.93l5.372-5.37h11.17a2.344 2.344 0 0 0 2.345-2.345v-4.004H81.69v3.223h-7.264l25.788-25.784c1.476-1.476.431-4.001-1.658-4.001H56.688A4.688 4.688 0 0 0 52 27.688v34.374h3.125V27.688Zm76.205 17.835h-12.655v-2.562l9.132-14.427h-9.132v-2.67h12.655v2.428l-9.186 14.548h9.186v2.683Zm16.529 0h-12.627V25.865h12.627v2.67h-9.62v5.743h8.211v2.656h-8.211v5.906h9.62v2.683Zm17.816-8.98v-1.982c0-1.016-.041-1.9-.122-2.656a8.144 8.144 0 0 0-.569-2.225 5.757 5.757 0 0 0-1.314-1.968c-1.238-1.232-2.94-1.847-5.108-1.847h-6.937v19.658h6.937c2.168 0 3.87-.616 5.108-1.847a5.639 5.639 0 0 0 1.314-2.023 8.886 8.886 0 0 0 .569-2.332c.081-.791.122-1.717.122-2.778Zm-3.048-3.6c.036.611.054 1.483.054 2.616 0 1.699-.059 2.989-.177 3.87-.117.88-.41 1.577-.88 2.09-.804.88-1.924 1.32-3.36 1.32h-3.631V28.535h3.631c1.427 0 2.547.445 3.36 1.335.316.35.551.796.704 1.335.163.54.263 1.119.299 1.74Zm-40.944 37.03h-3.008V50.316h3.008v19.659Zm17.274 0h2.751V50.316h-2.994v13.807l-9.132-13.807h-2.751v19.659h3.008V56.14l9.118 13.834Zm21.398-9.963v.984c0 1.06-.041 1.986-.122 2.778a8.884 8.884 0 0 1-.569 2.332 5.64 5.64 0 0 1-1.314 2.022c-1.238 1.232-2.94 1.848-5.108 1.848h-6.937V50.315h6.937c2.168 0 3.87.616 5.108 1.847a5.758 5.758 0 0 1 1.314 1.969c.298.728.488 1.47.569 2.225.081.755.122 1.64.122 2.656v.998Zm-2.994 0a47.73 47.73 0 0 0-.054-2.616 7.606 7.606 0 0 0-.298-1.74c-.154-.539-.389-.984-.705-1.334-.813-.89-1.933-1.335-3.36-1.335h-3.631V67.29h3.631c1.436 0 2.556-.441 3.36-1.322.47-.512.763-1.209.881-2.09.117-.88.176-2.17.176-3.87Zm19.798 6.876c.615-1.034.922-2.216.922-3.546V50.315h-2.994v12.89c0 .872-.172 1.627-.515 2.265a3.562 3.562 0 0 1-1.436 1.484c-.615.341-1.332.512-2.154.512-.822 0-1.541-.17-2.155-.512a3.584 3.584 0 0 1-1.422-1.484c-.335-.647-.502-1.402-.502-2.265v-12.89h-2.994V63.34c0 1.33.307 2.512.921 3.546a6.316 6.316 0 0 0 2.534 2.4c1.075.566 2.281.85 3.618.85 1.345 0 2.556-.284 3.631-.85a6.284 6.284 0 0 0 2.546-2.4Zm17.55-2.521c0 .872-.171 1.672-.514 2.4a5.164 5.164 0 0 1-1.491 1.847 6.802 6.802 0 0 1-2.249 1.146c-.858.252-1.806.377-2.845.377-1.508 0-2.822-.198-3.943-.593-1.111-.404-2.131-1.07-3.062-1.996l2.006-1.968c.442.45.925.818 1.449 1.106.533.288 1.098.49 1.694.607a9.937 9.937 0 0 0 1.91.175c1.274 0 2.272-.265 2.994-.796.723-.53 1.084-1.272 1.084-2.225 0-.89-.262-1.568-.786-2.035a2.266 2.266 0 0 0-.826-.526c-.307-.126-.749-.23-1.328-.31l-2.33-.324c-1.608-.225-2.859-.75-3.753-1.577-.958-.89-1.436-2.14-1.436-3.749 0-1.141.266-2.148.799-3.02.533-.872 1.296-1.546 2.29-2.023.993-.485 2.163-.728 3.509-.728 1.328 0 2.475.18 3.441.54.967.35 1.866.912 2.697 1.685l-1.924 1.888a4.793 4.793 0 0 0-1.274-.904 5.296 5.296 0 0 0-1.409-.471 8.128 8.128 0 0 0-1.612-.149c-.75 0-1.396.13-1.938.391-.542.26-.957.625-1.246 1.092-.28.459-.42.985-.42 1.578 0 .782.248 1.393.745 1.834.244.206.564.395.962.566.397.162.817.274 1.26.337l2.249.337c.903.135 1.639.32 2.208.553a4.562 4.562 0 0 1 1.477.903c1.075.935 1.612 2.279 1.612 4.032Zm10.704-11.38h5.433v-2.67h-13.874v2.67h5.447v16.989h2.994v-16.99Zm22.685 16.989h-3.496l-4.16-8.279h-3.739v8.279h-3.008V50.315h7.669c1.21 0 2.281.247 3.211.742.939.485 1.657 1.164 2.154 2.036.506.863.759 1.851.759 2.966 0 1.348-.366 2.476-1.098 3.384-.722.899-1.666 1.51-2.831 1.834l4.539 8.697Zm-3.604-13.888c0-.962-.308-1.717-.922-2.265-.605-.557-1.418-.836-2.438-.836h-4.431v6.162h4.431c1.011 0 1.824-.274 2.438-.823.614-.548.922-1.294.922-2.238Zm7.384 13.888h3.007V50.315h-3.007v19.659Zm19.627 0h-12.627V50.315h12.627v2.67h-9.619v5.744h8.21v2.656h-8.21v5.906h9.619v2.683Zm15.96-3.21a5.56 5.56 0 0 0 .515-2.4c0-1.752-.538-3.096-1.612-4.03a4.583 4.583 0 0 0-1.477-.904c-.569-.234-1.305-.418-2.209-.553l-2.249-.337a5.319 5.319 0 0 1-1.26-.337 3.822 3.822 0 0 1-.962-.567c-.496-.44-.745-1.051-.745-1.833 0-.593.14-1.12.42-1.578.289-.467.705-.831 1.247-1.092.542-.26 1.188-.39 1.937-.39.587 0 1.125.049 1.612.148.488.09.958.247 1.41.471.451.216.876.517 1.273.904l1.924-1.888c-.831-.773-1.73-1.335-2.696-1.685-.967-.36-2.114-.54-3.442-.54-1.345 0-2.515.243-3.509.729-.993.476-1.756 1.15-2.289 2.022-.533.872-.8 1.879-.8 3.02 0 1.61.479 2.859 1.436 3.749.895.826 2.145 1.352 3.753 1.577l2.331.324c.578.08 1.02.184 1.327.31.316.117.592.292.827.526.524.467.786 1.146.786 2.035 0 .953-.362 1.695-1.084 2.225-.723.53-1.721.796-2.994.796a9.94 9.94 0 0 1-1.911-.175 5.957 5.957 0 0 1-1.693-.607 6.245 6.245 0 0 1-1.45-1.106l-2.005 1.968c.93.927 1.951 1.591 3.062 1.996 1.12.395 2.434.593 3.942.593 1.039 0 1.987-.125 2.845-.377a6.808 6.808 0 0 0 2.25-1.146 5.161 5.161 0 0 0 1.49-1.847Z" clipRule="evenodd" />
++          <path fillRule="evenodd" d="M55.125 27.688c0-.863.7-1.563 1.563-1.563h39.983l-5.47 5.469h-27.48a3.125 3.125 0 0 0-3.126 3.125V54.25h3.125V34.719h24.356l-5.47 5.468H71.535a2.344 2.344 0 0 0-2.344 2.344v3.907h3.125v-3.126h7.166L53.791 69C52.316 70.475 53.362 73 55.45 73h41.87a4.687 4.687 0 0 0 4.687-4.688V33.938h-3.125v34.374c0 .863-.7 1.563-1.563 1.563H57.335l5.47-5.469h27.481a3.125 3.125 0 0 0 3.126-3.125V41.75h-3.126v19.531H65.93l5.372-5.37h11.17a2.344 2.344 0 0 0 2.345-2.345v-4.004H81.69v3.223h-7.264l25.788-25.784c1.476-1.476.431-4.001-1.658-4.001H56.688A4.688 4.688 0 0 0 52 27.688v34.374h3.125V27.688Zm76.205 17.835h-12.655v-2.562l9.132-14.427h-9.132v-2.67h12.655v2.428l-9.186 14.548h9.186v2.683Zm16.529 0h-12.627V25.865h12.627v2.67h-9.62v5.743h8.211v2.656h-8.211v5.906h9.62v2.683Zm17.816-8.98v-1.982c0-1.016-.041-1.9-.122-2.656a8.144 8.144 0 0 0-.569-2.225 5.757 5.757 0 0 0-1.314-1.968c-1.238-1.232-2.94-1.847-5.108-1.847h-6.937v19.658h6.937c2.168 0 3.87-.616 5.108-1.847a5.639 5.639 0 0 0 1.314-2.023 8.886 8.886 0 0 0 .569-2.332c.081-.791.122-1.717.122-2.778Zm-3.048-3.6c.036.611.054 1.483.054 2.616 0 1.699-.059 2.989-.177 3.87-.117.88-.41 1.577-.88 2.09-.804.88-1.924 1.32-3.36 1.32h-3.631V28.535h3.631c1.427 0 2.547.445 3.36 1.335.316.35.551.796.704 1.335.163.54.263 1.119.299 1.74Zm-40.944 37.03h-3.008V50.316h3.008v19.659Zm17.274 0h2.751V50.316h-2.994v13.807l-9.132-13.807h-2.751v19.659h3.008V56.14l9.118 13.834Zm21.398-9.963v.984c0 1.06-.041 1.986-.122 2.778a8.884 8.884 0 0 1-.569 2.332 5.64 5.64 0 0 1-1.314 2.022c-1.238 1.232-2.94 1.848-5.108 1.848h-6.937V50.315h6.937c2.168 0 3.87.616 5.108 1.847a5.758 5.758 0 0 1 1.314 1.969c.298.728.488 1.47.569 2.225.081.755.122 1.64.122 2.656v.998Zm-2.994 0a47.73 47.73 0 0 0-.054-2.616 7.606 7.606 0 0 0-.298-1.74c-.154-.539-.389-.984-.705-1.334-.813-.89-1.933-1.335-3.36-1.335h-3.631V67.29h3.631c1.436 0 2.556-.441 3.36-1.322.47-.512.763-1.209.881-2.09.117-.88.176-2.17.176-3.87Zm19.798 6.876c.615-1.034.922-2.216.922-3.546V50.315h-2.994v12.89c0 .872-.172 1.627-.515 2.265a3.562 3.562 0 0 1-1.436 1.484c-.615.341-1.332.512-2.154.512-.822 0-1.541-.17-2.155-.512a3.584 3.584 0 0 1-1.422-1.484c-.335-.647-.502-1.402-.502-2.265v-12.89h-2.994V63.34c0 1.33.307 2.512.921 3.546a6.316 6.316 0 0 0 2.534 2.4c1.075.566 2.281.85 3.618.85 1.345 0 2.556-.284 3.631-.85a6.284 6.284 0 0 0 2.546-2.4Zm17.55-2.521c0 .872-.171 1.672-.514 2.4a5.164 5.164 0 0 1-1.491 1.847 6.802 6.802 0 0 1-2.249 1.146c-.858.252-1.806.377-2.845.377-1.508 0-2.822-.198-3.943-.593-1.111-.404-2.131-1.07-3.062-1.996l2.006-1.968c.442.45.925.818 1.449 1.106.533.288 1.098.49 1.694.607a9.937 9.937 0 0 0 1.91.175c1.274 0 2.272-.265 2.994-.796.723-.53 1.084-1.272 1.084-2.225 0-.89-.262-1.568-.786-2.035a2.266 2.266 0 0 0-.826-.526c-.307-.126-.749-.23-1.328-.31l-2.33-.324c-1.608-.225-2.859-.75-3.753-1.577-.958-.89-1.436-2.14-1.436-3.749 0-1.141.266-2.148.799-3.02.533-.872 1.296-1.546 2.29-2.023.993-.485 2.163-.728 3.509-.728 1.328 0 2.475.18 3.441.54.967.35 1.866.912 2.697 1.685l-1.924 1.888a4.793 4.793 0 0 0-1.274-.904 5.296 5.296 0 0 0-1.409-.471 8.128 8.128 0 0 0-1.612-.149c-.75 0-1.396.13-1.938.391-.542.26-.957.625-1.246 1.092-.28.459-.42.985-.42 1.578 0 .782.248 1.393.745 1.834.244.206.564.395.962.566.397.162.817.274 1.26.337l2.249.337c.903.135 1.639.32 2.208.553a4.562 4.562 0 0 1 1.477.903c1.075.935 1.612 2.279 1.612 4.032Zm10.704-11.38h5.433v-2.67h-13.874v2.67h5.447v16.989h2.994v-16.99Zm22.685 16.989h-3.496l-4.16-8.279h-3.739v8.279h-3.008V50.315h7.669c1.21 0 2.281.247 3.211.742.939.485 1.657 1.164 2.154 2.036.506.863.759 1.851.759 2.966 0 1.348-.366 2.476-1.098 3.384-.722.899-1.666 1.51-2.831 1.834l4.539 8.697Zm-3.604-13.888c0-.962-.308-1.717-.922-2.265-.605-.557-1.418-.836-2.438-.836h-4.431v6.162h4.431c1.011 0 1.824-.274 2.438-.823.614-.548.922-1.294.922-2.238Zm7.384 13.888h3.007V50.315h-3.007v19.659Zm19.627 0h-12.627V50.315h12.627v2.67h-9.619v5.744h8.21v2.656h-8.21v5.906h9.619v2.683Zm15.96-3.21a5.56 5.56 0 0 0 .515-2.4c0-1.752-.538-3.096-1.612-4.03a4.583 4.583 0 0 0-1.477-.904c-.569-.234-1.305-.418-2.209-.553l-2.249-.337a5.319 5.319 0 0 1-1.26-.337 3.822 3.822 0 0 1-.962-.567c-.496-.44-.745-1.051-.745-1.833 0-.593.14-1.12.42-1.578.289-.467.705-.831 1.247-1.092.542-.26 1.188-.39 1.937-.39.587 0 1.125.049 1.612.148.488.09.958.247 1.41.471.451.216.876.517 1.273.904l1.924-1.888c-.831-.773-1.73-1.335-2.696-1.685-.967-.36-2.114-.54-3.442-.54-1.345 0-2.515.243-3.509.729-.993.476-1.756 1.15-2.289 2.022-.533.872-.8 1.879-.8 3.02 0 1.61.479 2.859 1.436 3.749.895.826 2.145 1.352 3.753 1.577l2.331.324c.578.08 1.02.184 1.327.31.316.117.592.292.827.526.524.467.786 1.146.786 2.035 0 .953-.362 1.695-1.084 2.225-.723.53-1.721.796-2.994.796a9.94 9.94 0 0 1-1.911-.175 5.957 5.957 0 0 1-1.693-.607 6.245 6.245 0 0 1-1.45-1.106l-2.005 1.968c.93.927 1.951 1.591 3.062 1.996 1.12.395 2.434.593 3.942.593 1.039 0 1.987-.125 2.845-.377a6.808 6.808 0 0 0 2.25-1.146 5.161 5.161 0 0 0 1.49-1.847Z" clipRule="evenodd" />
+         </svg>
+       );
+     },
+@@ -542,7 +542,7 @@ function InsiderPerkScreenshots() {
+   return (
+     <div className="line-y mt-10 grid grid-rows-1 gap-2 p-2 md:h-130 md:grid-rows-2 lg:grid-cols-3">
+       <div className="relative overflow-hidden rounded-xl bg-gray-200 pt-9 pl-9 outline -outline-offset-1 outline-gray-950/5 max-md:aspect-[4/3] md:col-start-1 md:row-start-1 md:max-lg:col-span-2 md:max-lg:pt-5 md:max-lg:pl-5 lg:row-span-2 dark:bg-gray-900 dark:outline-white/5">
+-        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black/80 pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
++        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
+           <svg fill="#D97757" viewBox="0 0 16 16" className="size-4">
+             <path d="m3.137 10.637 3.145-1.765.052-.154-.052-.085h-.154l-.526-.032-1.797-.048-1.559-.065-1.51-.081-.38-.081L0 7.856l.036-.234.32-.215.458.04 1.011.07 1.518.105 1.101.064 1.631.17h.26l.036-.105-.09-.065-.068-.064-1.57-1.065-1.7-1.125-.89-.648-.483-.328-.242-.307-.106-.672.438-.482.586.04.15.041.595.458 1.271.983 1.66 1.222.242.203.098-.07.012-.048-.11-.182-.902-1.63-.964-1.66-.429-.689-.113-.412a1.982 1.982 0 0 1-.069-.486l.498-.676L4.46 0l.664.09.28.242.412.943.668 1.485L7.52 4.78l.304.6.162.554.06.17h.106v-.097l.085-1.138.158-1.396.153-1.797.053-.506.251-.607.498-.328.388.186.32.457-.044.296-.19 1.234-.373 1.935-.243 1.295h.142l.162-.162.655-.87 1.101-1.376.486-.546.567-.604.364-.287h.688l.506.753-.226.777-.709.899-.587.76-.842 1.134-.526.907.049.072.125-.012 1.902-.405 1.029-.186 1.226-.21.555.259.06.263-.218.538-1.312.324-1.538.308-2.29.542-.03.02.033.04 1.033.098.44.024h1.081l2.012.15.526.348.316.425-.053.324-.81.413-1.092-.26-2.55-.606-.874-.219h-.122v.073l.729.712 1.336 1.206 1.671 1.555.085.384-.214.304-.227-.033-1.47-1.105-.566-.498-1.283-1.08h-.085v.113l.295.433 1.563 2.348.08.72-.113.235-.404.142-.446-.081-.914-1.283-.943-1.445-.761-1.296-.093.053-.45 4.837-.21.247L7.58 16l-.405-.308-.214-.498.214-.983.26-1.283.21-1.02.19-1.267.113-.42-.008-.03-.093.013-.955 1.311-1.453 1.963-1.15 1.23-.275.11-.477-.247.044-.441.267-.393 1.59-2.023.96-1.255.62-.725-.005-.105h-.036l-4.226 2.744-.753.098-.323-.304.04-.498.154-.162 1.27-.874-.003.004Z" />
+           </svg>
+@@ -566,7 +566,7 @@ function InsiderPerkScreenshots() {
+         />
+       </div>
+       <div className="relative overflow-hidden rounded-xl bg-[#F66969] pt-9 pl-9 inset-ring inset-ring-gray-950/10 max-md:aspect-[4/3] md:row-start-1 md:max-lg:col-start-3 md:max-lg:pt-5 md:max-lg:pl-5 lg:col-start-2">
+-        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black/80 pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
++        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
+           <svg fill="#FF6363" viewBox="0 0 16 16" className="size-4">
+             <path
+               d="M4 10.33V12L0 8l.834-.834L4 10.331ZM5.67 12H4l4.001 4 .834-.834L5.67 12Zm9.495-3.165L16 8 7.999 0l-.833.837 3.165 3.165H8.418l-2.21-2.205-.833.834 1.373 1.374h-.96v6.21h6.21v-.96l1.374 1.373.834-.833-2.208-2.21V5.672l3.167 3.163ZM4.418 3.586l-.838.835.897.896.834-.835-.893-.896Zm7.105 7.104-.835.835.895.896.836-.835-.896-.896ZM2.626 5.377l-.835.836L4 8.421v-1.67L2.625 5.377Zm6.628 6.626h-1.67l2.209 2.21.835-.836-1.374-1.374Z"
+@@ -583,7 +583,7 @@ function InsiderPerkScreenshots() {
+         />
+       </div>
+       <div className="relative flex items-center justify-center rounded-xl bg-[#5865F2] inset-ring inset-ring-gray-950/10 max-md:aspect-[4/3] md:row-start-2 md:max-lg:col-start-1 lg:col-start-2">
+-        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black/80 pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
++        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
+           <LockClosedIcon className="size-4 fill-white/75" />
+           Private community
+         </p>
+@@ -592,7 +592,7 @@ function InsiderPerkScreenshots() {
+         </svg>
+       </div>
+       <div className="relative overflow-hidden rounded-xl bg-gray-200 pt-9 pl-9 outline -outline-offset-1 outline-gray-950/5 max-md:aspect-[4/3] md:max-lg:col-span-2 md:max-lg:col-start-2 md:max-lg:row-start-2 md:max-lg:pt-5 md:max-lg:pl-5 lg:col-start-3 lg:row-span-2 lg:row-start-1 dark:bg-gray-900 dark:outline-white/5">
+-        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black/80 pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
++        <p className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full border border-white/20 bg-black pr-4 pl-2 font-mono text-xs/7 font-medium text-white outline outline-black backdrop-blur-sm lg:right-6 lg:bottom-6">
+           <svg fill="none" viewBox="0 0 16 16" className="size-4">
+             <path
+               fill="#0065A9"
+diff --git a/src/components/code-example.tsx b/src/components/code-example.tsx
+index 3735406..41fdca6 100644
+--- a/src/components/code-example.tsx
++++ b/src/components/code-example.tsx
+@@ -125,6 +125,8 @@ export function CodeBlock({ example }: { example: { lang: string; code: string }
+   );
+ }
+ 
++import type { HTMLAttributes } from "react";
++
+ export function HighlightedCode({
+   example,
+   className,
+diff --git a/src/components/docs-sidebar.tsx b/src/components/docs-sidebar.tsx
+index b795674..2b5fb5d 100644
+--- a/src/components/docs-sidebar.tsx
++++ b/src/components/docs-sidebar.tsx
+@@ -111,6 +111,7 @@ function TopNav() {
+               width="5"
+               height="5"
+               viewBox="0 0 5 5"
++              aria-hidden="true"
+               className="absolute top-[-2px] left-[-2px] fill-sky-300 dark:fill-sky-300/50"
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+@@ -119,6 +120,7 @@ function TopNav() {
+               width="5"
+               height="5"
+               viewBox="0 0 5 5"
++              aria-hidden="true"
+               className="absolute top-[-2px] right-[-2px] fill-sky-300 dark:fill-sky-300/50"
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+@@ -127,6 +129,7 @@ function TopNav() {
+               width="5"
+               height="5"
+               viewBox="0 0 5 5"
++              aria-hidden="true"
+               className="absolute bottom-[-2px] left-[-2px] fill-sky-300 dark:fill-sky-300/50"
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+@@ -135,6 +138,7 @@ function TopNav() {
+               width="5"
+               height="5"
+               viewBox="0 0 5 5"
++              aria-hidden="true"
+               className="absolute right-[-2px] bottom-[-2px] fill-sky-300 dark:fill-sky-300/50"
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+diff --git a/src/components/header.tsx b/src/components/header.tsx
+index 52126d2..2d37873 100644
+--- a/src/components/header.tsx
++++ b/src/components/header.tsx
+@@ -11,7 +11,7 @@ import { SearchButton } from "./search";
+ function Logo(props: React.ComponentProps<"svg">) {
+   return (
+     <>
+-      <svg viewBox="0 0 167 21" fill="none" {...props}>
++      <svg aria-hidden="true" viewBox="0 0 167 21" fill="none" {...props}>
+         <path
+           className="fill-sky-400"
+           d="M17.183 0C12.6 0 9.737 2.291 8.59 6.873c1.719-2.29 3.723-3.15 6.014-2.577 1.307.326 2.242 1.274 3.275 2.324 1.685 1.71 3.635 3.689 7.894 3.689 4.582 0 7.445-2.291 8.591-6.872-1.718 2.29-3.723 3.15-6.013 2.576-1.308-.326-2.243-1.274-3.276-2.324C23.39 1.98 21.44 0 17.183 0ZM8.59 10.309C4.01 10.309 1.145 12.6 0 17.182c1.718-2.291 3.723-3.15 6.013-2.577 1.308.326 2.243 1.274 3.276 2.324 1.685 1.71 3.635 3.689 7.894 3.689 4.582 0 7.445-2.29 8.59-6.872-1.718 2.29-3.722 3.15-6.013 2.577-1.307-.327-2.242-1.276-3.276-2.325-1.684-1.71-3.634-3.689-7.893-3.689Z"
+@@ -126,10 +126,12 @@ export function Header(props: React.PropsWithChildren) {
+           <VersionPicker />
+         </div>
+         <div className="flex items-center gap-6 max-md:hidden">
+-          <SearchButton className="inline-flex items-center gap-1 rounded-full bg-gray-950/2 px-2 py-1 inset-ring inset-ring-gray-950/8 dark:bg-white/5 dark:inset-ring-white/2">
++          <SearchButton aria-label="Search" className="inline-flex items-center gap-1 rounded-full bg-gray-950/2 px-2 py-1 inset-ring inset-ring-gray-950/8 dark:bg-white/5 dark:inset-ring-white/2">
+             <svg
+               xmlns="http://www.w3.org/2000/svg"
+               viewBox="0 0 16 16"
++              aria-hidden="true"
++              focusable="false"
+               className="-ml-0.5 size-4 fill-gray-600 dark:fill-gray-500"
+             >
+               <path
+@@ -159,7 +161,7 @@ export function Header(props: React.PropsWithChildren) {
+           <a href="/plus?ref=top" className="group relative px-1.5 text-sm/6 text-sky-800 dark:text-sky-300">
+             <span className="absolute inset-0 border border-dashed border-sky-300/60 bg-sky-400/10 group-hover:bg-sky-400/15 dark:border-sky-300/30" />
+             Plus
+-            <svg
++            <svg aria-hidden="true"
+               width="5"
+               height="5"
+               viewBox="0 0 5 5"
+@@ -167,7 +169,7 @@ export function Header(props: React.PropsWithChildren) {
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+             </svg>
+-            <svg
++            <svg aria-hidden="true"
+               width="5"
+               height="5"
+               viewBox="0 0 5 5"
+@@ -175,7 +177,7 @@ export function Header(props: React.PropsWithChildren) {
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+             </svg>
+-            <svg
++            <svg aria-hidden="true"
+               width="5"
+               height="5"
+               viewBox="0 0 5 5"
+@@ -183,7 +185,7 @@ export function Header(props: React.PropsWithChildren) {
+             >
+               <path d="M2 0h1v2h2v1h-2v2h-1v-2h-2v-1h2z" />
+             </svg>
+-            <svg
++            <svg aria-hidden="true"
+               width="5"
+               height="5"
+               viewBox="0 0 5 5"
+@@ -199,7 +201,7 @@ export function Header(props: React.PropsWithChildren) {
+         </div>
+         <div className="flex items-center gap-2.5 md:hidden">
+           <SearchButton aria-label="Search" className="inline-grid size-7 place-items-center rounded-md">
+-            <svg viewBox="0 0 16 16" fill="currentColor" className="size-4">
++            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false" className="size-4">
+               <path
+                 fillRule="evenodd"
+                 d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
+@@ -209,7 +211,7 @@ export function Header(props: React.PropsWithChildren) {
+           </SearchButton>
+ 
+           <IconButton aria-label="Navigation" onClick={() => setNavIsOpen(!navIsOpen)}>
+-            <svg viewBox="0 0 16 16" fill="currentColor" className="size-4">
++            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false" className="size-4">
+               <path d="M8 2a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM8 6.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM9.5 12.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0Z" />
+             </svg>
+           </IconButton>
+@@ -223,7 +225,7 @@ export function Header(props: React.PropsWithChildren) {
+               <div className="flex h-14 items-center justify-between px-4 py-4 sm:px-6">
+                 <TailwindMark className="h-6" />
+                 <IconButton aria-label="Navigation" onClick={() => setNavIsOpen(false)}>
+-                  <svg viewBox="0 0 16 16" fill="currentColor" className="size-4">
++                  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false" className="size-4">
+                     <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
+                   </svg>
+                 </IconButton>
+diff --git a/src/components/highlight.tsx b/src/components/highlight.tsx
+index 758909f..522eb6e 100644
+--- a/src/components/highlight.tsx
++++ b/src/components/highlight.tsx
+@@ -73,7 +73,7 @@ export function HighlightedCode({
+   [key: string]: any;
+ }) {
+   return (
+-    <div {...props} className={className}>
++    <div role="region" {...props} className={className}>
+       {highlight({
+         ...example,
+         components,
+diff --git a/src/components/home/explainer-section.tsx b/src/components/home/explainer-section.tsx
+index a9944a8..5124faf 100644
+--- a/src/components/home/explainer-section.tsx
++++ b/src/components/home/explainer-section.tsx
+@@ -158,7 +158,7 @@ export default function ExplainerSection() {
+                   </div>
+                   <div className="flex w-full flex-col gap-1 lg:h-132.5 lg:flex-row">
+                     <div className="flex flex-col gap-1 lg:w-1/2 xl:w-5/8">
+-                      <Panel className="min-h-0 flex-1 max-lg:max-h-76" aria-label="panel, HTML editor, animated">
++                      <Panel role="region" className="min-h-0 flex-1 max-lg:max-h-76" aria-label="panel, HTML editor, animated">
+                         <Tabs>
+                           <Tab selected className="group-data-modified:italic">
+                             index.html
+@@ -168,7 +168,7 @@ export default function ExplainerSection() {
+                         </Tabs>
+                         <HtmlFile className="with-line-numbers" />
+                       </Panel>
+-                      <Panel className="h-32 shrink-0 lg:h-46" aria-label="panel, terminal, animated">
++                      <Panel role="region" className="h-32 shrink-0 lg:h-46" aria-label="panel, terminal, animated">
+                         <Tabs>
+                           <Tab selected>Terminal</Tab>
+                         </Tabs>
+@@ -176,7 +176,7 @@ export default function ExplainerSection() {
+                       </Panel>
+                     </div>
+                     <div className="flex h-66 flex-col gap-2.5 lg:h-auto lg:w-1/2 xl:w-3/8">
+-                      <Panel className="h-full" aria-label="panel, built CSS, animated">
++                      <Panel role="region" className="h-full" aria-label="panel, built CSS, animated">
+                         <Tabs>
+                           <Tab selected>build.css</Tab>
+                         </Tabs>
+@@ -197,7 +197,7 @@ export default function ExplainerSection() {
+ function HtmlFile({ className }: { className?: string }) {
+   return (
+     <HighlightedCode
+-      aria-label="editor, readonly, html file"
++      role="region" aria-label="editor, readonly, html file"
+       className={clsx(
+         "*:flex *:*:max-w-none *:*:shrink-0 *:*:grow *:rounded-lg *:px-3 *:py-2",
+         "**:[.line]:isolate **:[.line]:block **:[.line]:not-last:min-h-[1lh]",
+@@ -265,7 +265,7 @@ async function BuiltCss({ className, timeline }: { className?: string; timeline:
+ 
+   return (
+     <HighlightedCode
+-      aria-label="editor, readonly, built CSS"
++      role="region" aria-label="editor, readonly, built CSS"
+       className={clsx(
+         "opacity-0 group-data-finished:opacity-100 group-data-running:opacity-100",
+         "*:flex *:*:max-w-none *:*:shrink-0 *:*:grow *:rounded-lg *:px-4 *:py-2",
+@@ -406,7 +406,7 @@ function Panel({
+     // positioning — vertical keeps working.
+     //
+     // As a workaround we use a client component to scroll things instead
+-    <AnchoredToBottom
++    <AnchoredToBottom role="region"
+       {...props}
+       enabled={true}
+       className={clsx(
+@@ -426,7 +426,7 @@ function Tabs({ children }: { children: React.ReactNode }) {
+   return (
+     <div
+       className="sticky top-0 left-0 z-10 col-start-1 row-start-1 mb-px flex items-center gap-2 border-b border-b-white/5 bg-white/2.5 bg-clip-padding p-1 text-white backdrop-blur-lg"
+-      role="presentation"
++      role="tablist"
+       aria-label="Tab Bar"
+     >
+       {children}
+@@ -441,7 +441,7 @@ function Tab({ className, selected, children }: { className?: string; selected?:
+         "isolate rounded-sm px-2 py-1 text-xs/5 text-white inset-ring-white/5 hover:bg-white/10 aria-selected:bg-white/10 aria-selected:inset-ring",
+         className,
+       )}
+-      role="presentation"
++      role="tab"
+       aria-selected={selected}
+     >
+       {children}
+diff --git a/src/components/showcase-thumbnail.tsx b/src/components/showcase-thumbnail.tsx
+index 1900ca2..1cd599c 100644
+--- a/src/components/showcase-thumbnail.tsx
++++ b/src/components/showcase-thumbnail.tsx
+@@ -82,7 +82,13 @@ export default function ShowcaseThumbnail({ showcase, priority = false }: { show
+         hideVideo();
+       }}
+     >
+-      <a href={showcase.url} target="_blank" rel="noopener noreferrer" className="absolute inset-0 z-10"></a>
++      <a
++        href={showcase.url}
++        target="_blank"
++        rel="noopener noreferrer"
++        className="absolute inset-0 z-10"
++        aria-label={"Visit " + showcase.name}
++      > <span className="sr-only">Visit {showcase.name}</span></a>
+       <GridContainer className={clsx("p-2", BEFORE_AND_AFTER_ONLY_IN_FIRST_COLUMN_OF_CURRENT_GRID)}>
+         <div className="relative aspect-[672/494] overflow-hidden rounded-xl outline outline-gray-950/5">
+           <Image
+@@ -148,11 +154,9 @@ export default function ShowcaseThumbnail({ showcase, priority = false }: { show
+         <div className="flex flex-wrap items-center">
+           <h2 className="text-sm/6 font-medium">{showcase.name}</h2>
+           {showcase.isTemplate && (
+-            <p
+-              aria-label="This site is a Tailwind Plus template"
+-              className="ml-2 rounded-full border border-transparent bg-sky-100 px-1.5 text-[0.6875rem] leading-5 font-semibold text-sky-500 dark:bg-gray-600/50 dark:text-gray-200 dark:group-hover:bg-sky-500 dark:group-hover:text-white"
+-            >
+-              Template
++            <p className="ml-2 rounded-full border border-transparent bg-sky-100 px-1.5 text-[0.6875rem] leading-5 font-semibold text-sky-500 dark:bg-gray-600/50 dark:text-gray-200 dark:group-hover:bg-sky-500 dark:group-hover:text-white">
++              <span className="sr-only">This site is a Tailwind Plus template</span>
++              <span aria-hidden="true">Template</span>
+             </p>
+           )}
+           <p className="line-clamp-1 w-full flex-none font-mono text-xs/6 text-neutral-600 dark:text-neutral-400">
